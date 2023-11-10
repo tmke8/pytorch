@@ -560,6 +560,14 @@ class Function(_SingleLevelFunction):
 
         return custom_function_call(cls, *args, **kwargs)
 
+    @staticmethod
+    def _compiled_autograd_key(ctx):
+        # TODO: figure out how to increment only once per compiled autograd graph
+        # otherwise we'll recompile every time for compiled autograd
+
+        # from torch._functorch.aot_autograd import AOT_COUNTER
+        return (1, )
+
 
 def once_differentiable(fn):
     @functools.wraps(fn)

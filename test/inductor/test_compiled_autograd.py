@@ -52,6 +52,31 @@ class TestCompiledAutograd(TestCase):
             self.assertEqual(counters["compiled_autograd"]["captures"], count)
             self.assertEqual(counters["compiled_autograd"]["compiles"], count)
 
+    def test_compiled_autograd_key(self):
+        def fn():
+            class MyFn(torch.autograd.Function):
+                @staticmethod
+                def forward(ctx, x):
+                    ctx.save_for_backward(x)
+                    ctx.shape = x.shape
+                    return x
+
+                @staticmethod
+                def backward(ctx, gO):
+                    x, = ctx.saved_tensors
+
+                    # works: return gO * x + x.shape[0]
+                    # doesn't work:
+                    return gO * x + ctx.shape[0]
+
+            for i in [10, 100, 10]:
+                x = torch.randn((i), requires_grad=True)
+                out = MyFn.apply(x)
+                out.sum().backward()
+                yield x.grad
+
+        self.check_output_and_recompiles(fn, 2)
+
     def test_basic(self):
         def fn():
             model = torch.nn.Sequential(
@@ -426,7 +451,7 @@ known_failing_tests = {
     "test_backward_with_inputs",  # specifying inputs= with .backward() not yet implemented for compiled autograd
     "test_callback_adds_callback",  # type object 'MyFunc' has no attribute '_compiled_autograd_key'
     "test_current_node",  # TorchDispatchMode not yet implemented for compiled autograd
-    "test_custom_function_cycle",  # type object 'MyFn' has no attribute '_compiled_autograd_key'
+    # "test_custom_function_cycle",  # type object 'MyFn' has no attribute '_compiled_autograd_key'
     "test_custom_function_error",  # type object 'BadBw' has no attribute '_compiled_autograd_key'
     "test_custom_function_exception",  # "Simulate error on backward pass" does not match "type object 'SimulateBackwa...
     "test_custom_function_non_tensor_inputs_outputs",  # type object 'MyFunction' has no attribute '_compiled_autograd_key'
