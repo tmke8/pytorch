@@ -145,6 +145,7 @@ class CachingAutotuner(KernelInterface):
     ):
         super().__init__()
 
+        assert len(configs) > 0, "Non-empty TritonConfig list required for compiling"
         self.fn = fn
         self.triton_meta = triton_meta
         self.inductor_meta = {} if inductor_meta is None else inductor_meta
@@ -1153,7 +1154,7 @@ def persistent_reduction(
     configs = [
         triton_config_reduction(size_hints, xblock, rnumel)
         for xblock in (1, 8, 32, 128)
-        if rnumel * xblock <= 4096 and xblock <= xnumel
+        if xblock == 1 or (rnumel * xblock <= 4096 and xblock <= xnumel)
     ]
 
     # TODO(jansel): we should be able to improve these heuristics
