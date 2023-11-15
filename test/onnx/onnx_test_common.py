@@ -459,14 +459,24 @@ def _compare_pytorch_onnx_with_ort(
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
-    if len(ref_outputs) != len(ort_outputs):
-        raise AssertionError(
-            f"Expected {len(ref_outputs)} outputs, got {len(ort_outputs)}"
-        )
-    for ref_output, ort_output in zip(ref_outputs, ort_outputs):
-        torch.testing.assert_close(
-            ref_output, torch.tensor(ort_output), rtol=rtol, atol=atol
-        )
+    for output_format in (
+        "pytorch",
+        "onnx",
+    ):  # Test output match with pytorch and onnx output format
+        if output_format == "pytorch":
+            ort_outputs = onnx_program.adapt_onnx_outputs_to_torch(ort_outputs)
+        elif output_format == "onnx":
+            ref_outputs = onnx_program.adapt_torch_outputs_to_onnx(ref_outputs)
+
+        if len(ref_outputs) != len(ort_outputs):
+            raise AssertionError(
+                f"Expected {len(ref_outputs)} outputs, got {len(ort_outputs)}"
+            )
+
+        for ref_output, ort_output in zip(ref_outputs, ort_outputs):
+            torch.testing.assert_close(
+                ref_output, torch.tensor(ort_output), rtol=rtol, atol=atol
+            )
 
 
 # The min onnx opset version to test for
