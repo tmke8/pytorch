@@ -1,10 +1,13 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, cast, Dict, List, Set
+from typing import Any, Dict, List, Set
 from warnings import warn
 
-from tools.stats.import_test_stats import ADDITIONAL_CI_FILES_FOLDER, TD_HEURISTIC_PREVIOUSLY_FAILED
+from tools.stats.import_test_stats import (
+    ADDITIONAL_CI_FILES_FOLDER,
+    TD_HEURISTIC_PREVIOUSLY_FAILED,
+)
 
 from tools.testing.target_determination.heuristics.interface import (
     HeuristicInterface,
@@ -36,11 +39,11 @@ class PreviouslyFailedInPR(HeuristicInterface):
         return {test: 1 for test in critical_tests if test in tests}
 
 
-def get_previous_failures() -> List[str]:
+def get_previous_failures() -> Set[str]:
     path = REPO_ROOT / ADDITIONAL_CI_FILES_FOLDER / TD_HEURISTIC_PREVIOUSLY_FAILED
     if not os.path.exists(path):
         print(f"could not find path {path}")
-        return []
+        return set()
     with open(path) as f:
         return _parse_prev_failing_test_files(json.load(f))
 

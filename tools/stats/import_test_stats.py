@@ -4,9 +4,9 @@ import datetime
 import json
 import os
 import pathlib
+import shutil
 from typing import Any, Callable, cast, Dict, List, Optional, Union
 from urllib.request import urlopen
-import shutil
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 
@@ -159,7 +159,10 @@ def copy_pytest_cache() -> None:
     original_path = REPO_ROOT / ".pytest_cache/v/cache/lastfailed"
     if not original_path.exists():
         return
-    shutil.copyfile(original_path, REPO_ROOT / ADDITIONAL_CI_FILES_FOLDER / TD_HEURISTIC_PREVIOUSLY_FAILED)
+    shutil.copyfile(
+        original_path,
+        REPO_ROOT / ADDITIONAL_CI_FILES_FOLDER / TD_HEURISTIC_PREVIOUSLY_FAILED,
+    )
 
 
 def get_from_test_infra_generated_stats(
