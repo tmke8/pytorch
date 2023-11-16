@@ -244,8 +244,8 @@ class CachingAutotuner(KernelInterface):
                     if nreg <= 65536 // device_prop.max_threads_per_multi_processor:
                         continue
 
-                    nreg_per_warp = nreg * 32
-                    nreg_per_block = nreg_per_warp * triton_config.num_warps
+                    # nreg_per_warp = nreg * 32
+                    # nreg_per_block = nreg_per_warp * triton_config.num_warps
 
                     # Previously we set max_blocks_per_sm to 'max_threads_per_multi_processo / (32 * num_warps)'
                     # The formula below is a tighter upper bound since we have the assumption that
@@ -256,14 +256,14 @@ class CachingAutotuner(KernelInterface):
                     #   < 65536 / ((65536 / max_threads_per_multi_processor) * 32 * num_warps)
                     #   = max_threads_per_multi_processor / (32 * num_warps)
                     # Using a tigher upper bound can reveal more optimization opportunities.
-                    max_blocks_per_sm = max(65536 // nreg_per_block, 1)
+                    # max_blocks_per_sm = max(65536 // nreg_per_block, 1)
 
-                    if (
-                        total_block
-                        <= max_blocks_per_sm * device_prop.multi_processor_count
-                    ):
-                        # no need to improve occupancy
-                        continue
+                    # if (
+                    #     total_block
+                    #     <= max_blocks_per_sm * device_prop.multi_processor_count
+                    # ):
+                    #     # no need to improve occupancy
+                    #     continue
                     new_config = copy.deepcopy(triton_config)
                     new_config.kwargs["RBLOCK"] = rblock // 2
                     if new_config in seen_configs:
@@ -918,8 +918,9 @@ def triton_config_reduction(size_hints, x, r, num_stages=1, num_warps=None) -> C
         r *= 2
 
     cfg = {"XBLOCK": x, "RBLOCK": r}
+    size_thread = 8
     if num_warps is None:
-        num_warps = conditional_product(x, r) // 128
+        num_warps = conditional_product(x, r) // (size_thread * 32)
     num_warps = next_power_of_2(min(max(num_warps, 2), 8))
     check_config(cfg, xnumel=size_hints[0])
     return Config(cfg, num_warps=num_warps, num_stages=num_stages)
