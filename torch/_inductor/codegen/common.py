@@ -898,6 +898,9 @@ class Kernel(CodeGen):
         # Upper bounds for indirect_indexing and their str representation
         self.indirect_max_sizes: Dict[Tuple[str, str], Tuple[sympy.Expr, str]] = {}
 
+        # line used in TORCH_CHECK/tl.device_assert
+        self.assert_line = '{assert_fn}({cond}, "index out of bounds: {cond_print}")'
+
         self.removed_buffers = set()
         self.inplaced_to_remove = set()
 
@@ -1002,7 +1005,6 @@ class Kernel(CodeGen):
             @staticmethod
             def indirect_indexing(var, size, check=True):
                 # Skip CSE since this doesn't return an expression
-
                 if var.bounds.lower < 0:
                     new_bounds = ValueRanges.unknown()
                     if var.bounds != ValueRanges.unknown() and isinstance(
@@ -1019,6 +1021,9 @@ class Kernel(CodeGen):
                             new_bounds = new_bounds | pos
 
                     stm = ops.add(var, self.rename_indexing(size))
+                    # ops.add don't propagate the bounds
+                    stm.value.bounds = new_bounds
+
                     # Mixed negative and non-negative
                     if var.bounds.upper >= 0:
                         lt = ops.lt(var, "0")
@@ -1040,12 +1045,9 @@ class Kernel(CodeGen):
                     if existing_size is not None:
                         size = sympy.Min(size, existing_size)
                     else:
-                        line = (
-                            '{assert_fn}({cond}, "index out of bounds: {cond_print}")'
-                        )
                         self.compute.writeline(
                             IndirectAssertLine(
-                                line,
+                                self.assert_line,
                                 self.assert_function,  # type: ignore[attr-defined]
                                 var,
                                 mask,
@@ -1054,6 +1056,7 @@ class Kernel(CodeGen):
                         )
 
                     self.indirect_max_sizes[map_key] = (size, self.index_to_str(size))  # type: ignore[attr-defined]
+
                 return sympy_symbol(str(var))
 
             @staticmethod

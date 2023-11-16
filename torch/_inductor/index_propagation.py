@@ -258,5 +258,9 @@ class IndexPropagation:
         if isinstance(index, IndexPropVar) and index.is_symbolic:
             # If we are turning a indirect indexing into direct, we need to wrap it.
             index = index.value.expr
-            return index + Where(index >= 0, 0, size)
+            result = index + Where(index >= 0, 0, size)
+            self._inner.check_bounds(result, size)
+
+            return index
+
         return self.fallback("indirect_indexing", (index, size, check), {}).value
