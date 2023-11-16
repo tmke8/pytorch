@@ -182,7 +182,7 @@ jobs:
         with:
           cache_dir: .pytest_cache
           shard: ${{ matrix.shard }}
-          job_identifier: ${{ github.workflow }}_${{ inputs.build-environment }}_${{ github.job }}_${{ matrix.config }}
+          job_identifier: ${{ github.workflow }}_${{ inputs.build-environment }}
 
       - name: Print remaining test logs
         shell: bash
